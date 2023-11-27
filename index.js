@@ -92,6 +92,23 @@ async function run() {
       }
     });
 
+    // update a user role
+    app.patch("/users/:id", async (req, res) => {
+      try {
+        const query = { _id: new ObjectId(req.params.id) };
+        const updatedUser = {
+          $set: {
+            role: req.body.newRole,
+          },
+        };
+        const result = await usersCollection.updateOne(query, updatedUser);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
