@@ -34,6 +34,45 @@ async function run() {
     const database = client.db("contest-hub");
     const usersCollection = database.collection("users");
 
+    // get user from user collection
+    app.get("/users", async (req, res) => {
+      try {
+        const result = await usersCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    });
+
+    // get user role from user collection
+    app.get("/users/role/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        // if (email !== req.decoded?.email) {
+        //   return res.status(403).send({ message: "Forbidden" });
+        // }
+        const query = { email: email };
+        const user = await usersCollection.findOne(query);
+        let admin = false;
+        let creator = false;
+        let participant = false;
+        if (user?.role === "admin") {
+          admin = true;
+        }
+        if (user?.role === "creator") {
+          creator = true;
+        }
+        if (user?.role === "user") {
+          participant = true;
+        }
+        res.send({ admin, creator, participant });
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    });
+
     // add a user to collection
     app.post("/users", async (req, res) => {
       try {
