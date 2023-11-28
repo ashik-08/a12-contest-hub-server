@@ -110,6 +110,18 @@ async function run() {
       }
     });
 
+    // get contest by email from collection
+    app.get("/contests/:email", async (req, res) => {
+      try {
+        const query = { created_by_email: req.params.email };
+        const result = await contestsCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    });
+
     // add contest to collection
     app.post("/contests", async (req, res) => {
       try {
@@ -128,6 +140,18 @@ async function run() {
           return res.send({ message: "Already exists" });
         }
         const result = await contestsCollection.insertOne(contest);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    });
+
+    // delete a contest from collection
+    app.delete("/contests/:id", async (req, res) => {
+      try {
+        const query = { _id: new ObjectId(req.params.id) };
+        const result = await contestsCollection.deleteOne(query);
         res.send(result);
       } catch (error) {
         console.log(error);
