@@ -110,6 +110,17 @@ async function run() {
       }
     });
 
+    // get all contest data from collection
+    app.get("/contests", async (req, res) => {
+      try {
+        const result = await contestsCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    });
+
     // get contest by email from collection
     app.get("/contests/:email", async (req, res) => {
       try {
@@ -173,6 +184,24 @@ async function run() {
             submission_instruction: req.body.submission_instruction,
             contest_type: req.body.contest_type,
             contest_deadline: req.body.contest_deadline,
+          },
+        };
+        const result = await contestsCollection.updateOne(filter, updateQuery);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    });
+
+    // update contest status to db from Manage Contest
+    app.put("/contest/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updateQuery = {
+          $set: {
+            status: "approved",
           },
         };
         const result = await contestsCollection.updateOne(filter, updateQuery);
