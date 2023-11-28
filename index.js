@@ -33,6 +33,7 @@ async function run() {
     // connect to the database & access it's collections
     const database = client.db("contest-hub");
     const usersCollection = database.collection("users");
+    const contestsCollection = database.collection("contests");
 
     // get user from user collection
     app.get("/users", async (req, res) => {
@@ -102,6 +103,31 @@ async function run() {
           },
         };
         const result = await usersCollection.updateOne(query, updatedUser);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    });
+
+    // add contest to collection
+    app.post("/contests", async (req, res) => {
+      try {
+        const contest = req.body;
+        // query to find all contest in the collection
+        const query = await contestsCollection.find().toArray();
+        // check if this contest already exist
+        const found = query.find(
+          (search) =>
+            search.contest_name === contest.contest_name &&
+            search.contest_price === contest.contest_price &&
+            search.prize_money === contest.prize_money &&
+            search.contest_type === contest.contest_type
+        );
+        if (found) {
+          return res.send({ message: "Already exists" });
+        }
+        const result = await contestsCollection.insertOne(contest);
         res.send(result);
       } catch (error) {
         console.log(error);
