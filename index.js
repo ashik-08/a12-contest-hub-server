@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-// const jwt = require("jsonwebtoken");
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 // const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
@@ -35,8 +35,85 @@ async function run() {
     const usersCollection = database.collection("users");
     const contestsCollection = database.collection("contests");
 
+    // jwt auth related api
+    app.post("/jwt", async (req, res) => {
+      try {
+        const user = req.body;
+        console.log("from /jwt -- user:", user);
+        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+          expiresIn: "2h",
+        });
+        console.log("from /jwt -- token:", token);
+        res.send({ token });
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    });
+
+    // token middleware function
+    const verifyToken = async (req, res, next) => {
+      try {
+        console.log("Value of token in middleware: ", req.headers);
+        if (!req.headers.authorization) {
+          return res
+            .status(401)
+            .send({ auth: false, message: "Not authorized" });
+        }
+        const token = req.headers.authorization.split(" ")[1];
+        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+          // error
+          if (err) {
+            console.log(err);
+            return res.status(401).send({ message: "Unauthorized" });
+          }
+          // if token is valid then it would be decoded
+          console.log("Value in the token: ", decoded);
+          req.decoded = decoded;
+          next();
+        });
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    };
+
+    // use verify admin after verifyToken
+    const verifyAdmin = async (req, res, next) => {
+      try {
+        const email = req.decoded.email;
+        const query = { email: email };
+        const user = await usersCollection.findOne(query);
+        const isAdmin = user?.role === "admin";
+        if (!isAdmin) {
+          return res.status(403).send({ message: "Forbidden" });
+        }
+        next();
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    };
+
+    // use verify creator
+    const verifyCreator = async (req, res, next) => {
+      try {
+        const email = req.decoded.email;
+        const query = { email: email };
+        const user = await usersCollection.findOne(query);
+        const isCreator = user?.role === "creator";
+        if (!isCreator) {
+          return res.status(403).send({ message: "Forbidden" });
+        }
+        next();
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    };
+
     // get user from user collection
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       try {
         const result = await usersCollection.find().toArray();
         res.send(result);
@@ -94,7 +171,7 @@ async function run() {
     });
 
     // update a user role
-    app.patch("/users/:id", async (req, res) => {
+    app.patch("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
       try {
         const query = { _id: new ObjectId(req.params.id) };
         const updatedUser = {
@@ -111,7 +188,7 @@ async function run() {
     });
 
     // get all contest data from collection
-    app.get("/contests", async (req, res) => {
+    app.get("/contests", verifyToken, async (req, res) => {
       try {
         const result = await contestsCollection.find().toArray();
         res.send(result);
@@ -122,18 +199,23 @@ async function run() {
     });
 
     // get contest by email from collection
-    app.get("/contests/:email", async (req, res) => {
-      try {
-        const query = { created_by_email: req.params.email };
-        const result = await contestsCollection.find(query).toArray();
-        res.send(result);
-      } catch (error) {
-        console.log(error);
-        return res.send({ error: true, message: error.message });
+    app.get(
+      "/contests/:email",
+      verifyToken,
+      verifyCreator,
+      async (req, res) => {
+        try {
+          const query = { created_by_email: req.params.email };
+          const result = await contestsCollection.find(query).toArray();
+          res.send(result);
+        } catch (error) {
+          console.log(error);
+          return res.send({ error: true, message: error.message });
+        }
       }
-    });
+    );
 
-    app.get("/contest/:id", async (req, res) => {
+    app.get("/contest/:id", verifyToken, verifyCreator, async (req, res) => {
       try {
         const query = { _id: new ObjectId(req.params.id) };
         const result = await contestsCollection.findOne(query);
@@ -145,7 +227,7 @@ async function run() {
     });
 
     // add contest to collection
-    app.post("/contests", async (req, res) => {
+    app.post("/contests", verifyToken, verifyCreator, async (req, res) => {
       try {
         const contest = req.body;
         // query to find all contest in the collection
@@ -170,7 +252,7 @@ async function run() {
     });
 
     // update contest data to db from Update Contest
-    app.patch("/contest/:id", async (req, res) => {
+    app.patch("/contest/:id", verifyToken, verifyCreator, async (req, res) => {
       try {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
@@ -195,7 +277,7 @@ async function run() {
     });
 
     // update contest status to db from Manage Contest
-    app.put("/contest/:id", async (req, res) => {
+    app.put("/contest/:id", verifyToken, verifyAdmin, async (req, res) => {
       try {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
@@ -213,7 +295,7 @@ async function run() {
     });
 
     // delete a contest from collection
-    app.delete("/contests/:id", async (req, res) => {
+    app.delete("/contests/:id", verifyToken, async (req, res) => {
       try {
         const query = { _id: new ObjectId(req.params.id) };
         const result = await contestsCollection.deleteOne(query);
