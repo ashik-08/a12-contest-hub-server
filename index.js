@@ -122,6 +122,17 @@ async function run() {
       }
     });
 
+    app.get("/contest/:id", async (req, res) => {
+      try {
+        const query = { _id: new ObjectId(req.params.id) };
+        const result = await contestsCollection.findOne(query);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    });
+
     // add contest to collection
     app.post("/contests", async (req, res) => {
       try {
@@ -140,6 +151,31 @@ async function run() {
           return res.send({ message: "Already exists" });
         }
         const result = await contestsCollection.insertOne(contest);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+        return res.send({ error: true, message: error.message });
+      }
+    });
+
+    // update contest data to db from Update Contest
+    app.patch("/contest/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updateQuery = {
+          $set: {
+            contest_name: req.body.contest_name,
+            contest_image: req.body.contest_image,
+            description: req.body.description,
+            contest_price: req.body.contest_price,
+            prize_money: req.body.prize_money,
+            submission_instruction: req.body.submission_instruction,
+            contest_type: req.body.contest_type,
+            contest_deadline: req.body.contest_deadline,
+          },
+        };
+        const result = await contestsCollection.updateOne(filter, updateQuery);
         res.send(result);
       } catch (error) {
         console.log(error);
