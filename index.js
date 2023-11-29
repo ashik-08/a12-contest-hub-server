@@ -5,6 +5,9 @@ const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 // const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const verifyToken = require("./src/middlewares/verifyToken");
+const verifyCreator = require("./src/middlewares/verifyCreator");
+const verifyAdmin = require("./src/middlewares/verifyAdmin");
 const port = process.env.PORT || 5001;
 
 // middleware
@@ -51,67 +54,6 @@ async function run() {
       }
     });
 
-    // token middleware function
-    const verifyToken = async (req, res, next) => {
-      try {
-        console.log("Value of token in middleware: ", req.headers);
-        if (!req.headers.authorization) {
-          return res
-            .status(401)
-            .send({ auth: false, message: "Not authorized" });
-        }
-        const token = req.headers.authorization.split(" ")[1];
-        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-          // error
-          if (err) {
-            console.log(err);
-            return res.status(401).send({ message: "Unauthorized" });
-          }
-          // if token is valid then it would be decoded
-          console.log("Value in the token: ", decoded);
-          req.decoded = decoded;
-          next();
-        });
-      } catch (error) {
-        console.log(error);
-        return res.send({ error: true, message: error.message });
-      }
-    };
-
-    // use verify admin after verifyToken
-    const verifyAdmin = async (req, res, next) => {
-      try {
-        const email = req.decoded.email;
-        const query = { email: email };
-        const user = await usersCollection.findOne(query);
-        const isAdmin = user?.role === "admin";
-        if (!isAdmin) {
-          return res.status(403).send({ message: "Forbidden" });
-        }
-        next();
-      } catch (error) {
-        console.log(error);
-        return res.send({ error: true, message: error.message });
-      }
-    };
-
-    // use verify creator
-    const verifyCreator = async (req, res, next) => {
-      try {
-        const email = req.decoded.email;
-        const query = { email: email };
-        const user = await usersCollection.findOne(query);
-        const isCreator = user?.role === "creator";
-        if (!isCreator) {
-          return res.status(403).send({ message: "Forbidden" });
-        }
-        next();
-      } catch (error) {
-        console.log(error);
-        return res.send({ error: true, message: error.message });
-      }
-    };
-
     // get user from user collection
     app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       try {
@@ -124,12 +66,12 @@ async function run() {
     });
 
     // get user role from user collection
-    app.get("/users/role/:email", async (req, res) => {
+    app.get("/users/role/:email", verifyToken, async (req, res) => {
       try {
         const email = req.params.email;
-        // if (email !== req.decoded?.email) {
-        //   return res.status(403).send({ message: "Forbidden" });
-        // }
+        if (email !== req.decoded?.email) {
+          return res.status(403).send({ message: "Forbidden" });
+        }
         const query = { email: email };
         const user = await usersCollection.findOne(query);
         let admin = false;
