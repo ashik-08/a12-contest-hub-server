@@ -19,6 +19,9 @@ const contestSchema = new Schema({
   created_by_photo: String,
   contest_deadline: String,
   status: String,
+  winner_name: String,
+  winner_email: String,
+  winner_photo: String,
 });
 
 const Contest = model("Contest", contestSchema);
