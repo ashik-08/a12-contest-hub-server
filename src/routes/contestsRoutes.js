@@ -7,7 +7,7 @@ const Contest = require("../models/Contest");
 // get all contest data from collection -- checked
 router.get("/", async (req, res) => {
   try {
-    const contests = await Contest.find({ status: "accepted" });
+    const contests = await Contest.find();
     const popular = await Contest.find({ status: "accepted" })
       .sort({ participation_count: -1 })
       .limit(8);
