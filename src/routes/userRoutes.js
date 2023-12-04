@@ -78,4 +78,22 @@ router.patch("/:id", verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
+// update a user profile
+router.put("/:email", verifyToken, async (req, res) => {
+  try {
+    const query = { email: req.params.email };
+    const updatedUser = {
+      $set: {
+        name: req.body.name,
+        photo: req.body.photo,
+      },
+    };
+    const result = await User.updateOne(query, updatedUser);
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+    return res.send({ error: true, message: error.message });
+  }
+});
+
 module.exports = router;
