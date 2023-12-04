@@ -17,13 +17,13 @@ router.get("/", verifyToken, verifyAdmin, async (req, res) => {
 });
 
 // get user role by email  -- checked
-router.get("/role/:email", verifyToken, async (req, res) => {
+router.get("/role/:email", async (req, res) => {
   try {
     const email = req.params.email;
 
-    if (email !== req.decoded?.email) {
-      return res.status(403).send({ message: "Forbidden" });
-    }
+    // if (email !== req.decoded?.email) {
+    //   return res.status(403).send({ message: "Forbidden" });
+    // }
 
     const user = await User.findOne({ email });
 

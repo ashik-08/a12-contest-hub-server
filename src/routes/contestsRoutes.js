@@ -58,6 +58,24 @@ router.post("/", verifyToken, verifyCreator, async (req, res) => {
   }
 });
 
+router.patch("/:id", verifyToken, verifyCreator, async (req, res) => {
+  try {
+    const query = { _id: req.params.id };
+    const updateWinner = {
+      $set: {
+        winner_name: req.body.participant_name,
+        winner_email: req.body.participant_email,
+        winner_photo: req.body.participant_photo,
+      },
+    };
+    const result = await Contest.updateOne(query, updateWinner);
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+    return res.send({ error: true, message: error.message });
+  }
+});
+
 // delete a contest from collection -- checked
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
