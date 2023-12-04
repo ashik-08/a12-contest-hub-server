@@ -5,6 +5,22 @@ const verifyToken = require("../middlewares/verifyToken");
 const Payment = require("../models/Payment");
 const Register = require("../models/Register");
 
+// get registration info by payment
+router.get("/:id/:email", verifyToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const email = req.params.email;
+    const result = await Payment.findOne({
+      contestId: id,
+      email: email,
+    });
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+    return res.send({ error: true, message: error.message });
+  }
+});
+
 // payment intent
 router.post("/create-payment-intent", verifyToken, async (req, res) => {
   try {

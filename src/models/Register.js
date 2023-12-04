@@ -9,11 +9,13 @@ const registerSchema = new Schema({
   contestId: String,
   contest_name: String,
   contest_image: String,
+  contest_deadline: String,
   participant_name: String,
   participant_email: String,
   participant_photo: String,
   prize_money: Number,
   submission_instruction: String,
+  fileURL: String,
   status: String,
 });
 
