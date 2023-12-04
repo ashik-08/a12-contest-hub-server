@@ -1,7 +1,7 @@
 const { model, Schema, mongoose } = require("mongoose");
 
 const paymentSchema = new Schema({
-  // Define user schema here
+  // Define payment schema here
   _id: {
     type: Schema.Types.ObjectId,
     default: () => new mongoose.Types.ObjectId(),
